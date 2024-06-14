@@ -134,25 +134,21 @@ def main(configs, parser):
                     e_labels.to(device),
                     h_labels.to(device),
                 )
-                if configs.predictor == "bert":
-                    word_ids = {key: val.to(device) for key, val in word_ids.items()}
-                    # generate mask
-                    query_mask = (
-                        (
-                            torch.zeros_like(word_ids["input_ids"])
-                            != word_ids["input_ids"]
-                        )
-                        .float()
-                        .to(device)
-                    )
-                else:
+                if configs.predictor == "glove":
                     word_ids, char_ids = word_ids.to(device), char_ids.to(device)
                     # generate mask
                     query_mask = (
                         (torch.zeros_like(word_ids) != word_ids).float().to(device)
                     )
+                else:
+                    raise ValueError(f"Unknown predictor type: {configs.predictor}")
+
                 # generate mask
                 video_mask = convert_length_to_mask(vfeat_lens).to(device)
+                # compute logits
+                h_score, start_logits, end_logits = model(
+                    word_ids, char_ids, vfeats, video_mask, query_mask
+                )
                 # compute logits
                 h_score, start_logits, end_logits = model(
                     word_ids, char_ids, vfeats, video_mask, query_mask
